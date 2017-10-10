@@ -27,12 +27,12 @@ Here the is full list of columns:
 
 ### Solution Statement
 
-We will be predicting a year based on song's lyrics through regression. Therefore, we will not be using a categorical output, but a continuous one. Therefore, _the output year will be a decimal number in the range 1965 and 2015_.   
+We will be predicting a year based on song's lyrics through regression. Therefore, we will not be using a categorical output, but a continuous one. Therefore, _the output year will be a decimal number in the range 1965 to 2015_.   
 If we would like to incorporate our model in an application that presents the result to an end user, we can consider rounding our decimal year to the nearest integer.
 
 ### Benchmark Model
 
-We are given some extra information about the dataset. Songs length have been increasing since the 1960's until today<sup>4</sup>. We could use this information to build a benchmark model that linearly predicts the release year based on the number of words in the song. We will be using sklearn's `LinearRegression` class that uses the Ordinary Least-Squares method. We will be feeding the number of words in the song lyrics as input and predicting the release year.
+We are given some extra information about the dataset. Songs length have been increasing since the 1960's until today<sup>4</sup>. We could use this information to build a benchmark model that linearly predicts the release year based on the number of words in the song. We will be using scikit-learn's `LinearRegression` class that uses the Ordinary Least-Squares method. We will be feeding the number of words in the song lyrics as input and predicting the release year.
 
 ### Evaluation Metrics
 
