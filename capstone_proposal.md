@@ -16,7 +16,7 @@ Given the importance of a song's lyrical theme as it relates to one's mood, we w
 
 ### Datasets and Inputs
 
-We will be using the `50 Years of Pop Music Lyrics` CSV dataset based on Billboard Magazine's Top 100 most popular songs. The dataset has been kindly built by @walkerkq and made available here: https://github.com/walkerkq/musiclyrics. A full description and samples of the dataset can be found here: https://www.kaggle.com/rakannimer/billboard-lyrics/data. In short, it contains songs ranked between 1 and 100 each year between 1965 and 2015 along with their lyrics. It also contains information about the song name and the artist. However, we will only be using the lyrics as it is what we are trying to solve in this problem; that is, the relationship between the lyrics and the release year. We will make the assumption that the 100 most popular songs for a certain year are a good representation of that release year.  
+We will be using the `50 Years of Pop Music Lyrics` CSV dataset based on Billboard Magazine's Top 100 most popular songs. The dataset has been kindly built by @walkerkq and made available here: https://github.com/walkerkq/musiclyrics. A full description and samples of the dataset can be found here: https://www.kaggle.com/rakannimer/billboard-lyrics/data. In short, it contains songs ranked between 1 and 100 for each year between 1965 and 2015 along with their lyrics. Therefore, it contains a total of 5,000 songs. It also contains information about the song name and the artist. However, we will only be using the lyrics as it is what we are trying to solve in this problem; that is, the relationship between the lyrics and the release year. We will make the assumption that the 100 most popular songs for a certain year are a good representation of that release year.  
 Here the is full list of columns:  
 * __Rank__: The Billboard Magazine rank for that song in the corresponding year. Billboard has been keeping up with modern technologies to stay relevant with current trends and music platforms<sup>3</sup>. The rank is an integer between 1 and 100. Unused.
 * __Song__: Song title. Unused. (Text)  
@@ -28,7 +28,7 @@ Here the is full list of columns:
 ### Solution Statement
 
 We will be predicting a year based on song's lyrics through regression. Therefore, we will not be using a categorical output, but a continuous one. Therefore, _the output year will be a decimal number in the range 1965 to 2015_.   
-If we would like to incorporate our model in an application that presents the result to an end user, we can consider rounding our decimal year to the nearest integer.
+If we would like to incorporate our model in an application that presents the result to an end user, we can consider rounding our decimal year to the nearest integer.  
 
 ### Benchmark Model
 
