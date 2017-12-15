@@ -31,7 +31,7 @@ To counter this issue, I made the decision to re-scrape the entire dataset. Here
 - I merged the original dataset and my newly scraped dataset by filling in the lyrics feature with the original lyrics if my scraping algorithm was unsuccessful.
 
 By doing so, I was able to get a cleaner dataset with a lower number of words stuck together.
-Please refer to _Appendix I_ for the scraping/merging code.  
+Please refer to the attache files `google_search.py` and `merge_dataset.py` for the scraping and merging code.  
 
 ### Problem Statement
 Given the importance of a song's lyrical theme as it relates to one's mood, we want to be able to predict a song's meta-information feature based on its lyrics. In this project, we will be focusing on approximating a song's release year in order to gain information and be able to better refine music recommendations. Therefore, we will be performing a regression on the dataset. After our model is trained, it will expect a song lyrics as input and will output a decimal number which represents our prediction of the release year of the input song.  
@@ -182,12 +182,12 @@ After performing the tf-idf vectorization of our data, we find that the shape of
 
 ### Algorithms and Techniques
 Here are the algorithms we used in this project:  
-- PorterStemmer in order to reduce words to their root. It relies on a set of rules that transform word endings into common suffixes. Example of porter stemmer transformations:  
-![png](porter_stemmer_example.png)  
-
+- PorterStemmer in order to reduce words to their root. It relies on a set of rules that transform word endings into common suffixes. Example of porter stemmer transformations:
+![png](porter_stemmer_example.png)
 - Aggregation technique on the `pandas` `DateFrame` in order to retrieve profanity words and word count.
 - Principal Component Analysis in order to reduce dimensionality.
   - `PCA` is an orthogonal linear transformation of the dataset features into components such that the components are ordered from highest variance to lowest variance. This technique also informs us on how much variance is explained by any first $n$ components. That way, we can take advantage of the dimensionality-variance explained trade-off and lose some variance in order to reduce the dimension of our dataset, speed our computations and minimize overfitting.
+- TF-IDF vectorization which computes the product of the term frequency of a certain word and the inverse document frequency of that word<sup>3</sup>.
 - `RandomForestRegressor`:
   - This algorithm works by running the data through subsequent decision trees with a subset of the number of features, and averaging their predictions. This technique enables us to drastically reduce overfitting and maintaining a reasonable computing time. The good thing here is that the training of the decision trees can be parallelized by using the  `n_jobs` parameter.
   - Hyper-paramater tuning on number of estimators (trees), max depth of trees.
@@ -283,13 +283,17 @@ except (OSError, IOError) as e:
 In addition to the various text processing techniques we used to reduce dimension, we also performed PCA on the processed dataset in order to further reduce the dimensionality of our dataset. We performed PCA on the dataset and experimented with the `n_components` hyper-parameter and chose to reduce the dimension to 50. By looking at the `explained_variance_ratio_`, the first principal axis already explains `9.99962362e-01` of the dataset variance.  
 
 ### Implementation
-The re-scraping and merging of the dataset was performed with Python scripts ran locally on my machine.  
-We then implemented the project using iPython notebook. We read the re-scraped CSV file into a `pandas` DataFrame. The initial DataFrame was transformed as it underwent pre-processing, dimension reduction, feature addition (word count and profanity count), train/test split and training.  
+#### _Scraping_
+The re-scraping and merging of the dataset was performed with Python scripts ran locally on my machine. I faced some issues when it came to find a free lyrics API. I looked into `Musixmatch` but it was a costly solution. Therefore I decided to use Google's `Custom Search Engine` in order to send search queries (see `google_search.py` attached). I decided to retrieve the data from azlyrics.com, but it looked like my IP address got blacklisted after a few hundred queries. Therefore, I pivoted to use `metrolyrics` as my datasource. I ran into a few issues with string encoding since some lyrics had false data written in Russian or Mandarin. I decided to only keep words using `Latin` encodings. I ran multiple scripts that read different parts of the input dataset and wrote to different files in order to speed up the scraping. Running 2 different scripts took a total of *4 hours*. After that, I had to deal with merging the data in the different files and had to write my own merging logic in `merge_csv.py`. If lyrics were not found through my scraping, I would keep the data from the orginal dataset. In the end, I ended up with a re-scraped dataset written to `merged.csv`.  
+
+#### _Training_
+I  pre-processed the data inside `merged.csv` as outlined in the _Text Preprocessing_ section above.  
+I then implemented the project using iPython notebook since it helped me take screenshots of my work as I was coding. I read the re-scraped CSV file into a `pandas` DataFrame. The initial DataFrame was transformed as it underwent pre-processing, dimension reduction, feature addition (word count and profanity count), train/test split and training.  
 In order to get the profanity count, I simply counted the number of profanity words in the dataset as they appear in the `profanityfilter` python module.
-As I was developing, some objects took a long time to process. Since I was doing multiple runs in order to test the training algorithms with different hyper-parameters and experimenting with the input data, I used the `pickle` module in order to save these objects to the filesystem.  
-We also added 2 new features:
-- The number of words in the song; since we found that it there is a good correlation between the release year and the song length.
-- The number of profanity words; music through the year has been moving from implicit references to profane themes to explicit profanity.<sup>6</sup>  
+As I was developing, some objects took a long time to process. Since I was doing multiple runs in order to test the training algorithms with different hyper-parameters and experimenting with the input data, I used the `pickle` module in order to save these objects to the filesystem, and load them on each new startup.  
+The 2 new features added to the dataset after the TF-IDF vectorization are:
+- The number of words in the song; since I found that there is a good correlation between the release year and the song length.
+- The number of profanity words; music through the year has been moving from implicit references to profane themes, to explicit profanity.<sup>6</sup>  
 
 ```python
 profanity_count = [sum([r.split().count(p.lower())
@@ -310,7 +314,9 @@ print('Dataset with profanity and word count shape: {}\n'
 
 In order to find the best estimator I performed grid search on a number of hyper parameters including:
 - `RandomForestRegressor`: the number of estimators, the maximum depth and the maximum number of features.
-- `MLPRegressor`: the number of hidden layers, the size of them and the maximum number of epochs
+- `MLPRegressor`: the number of hidden layers, the size of them and the maximum number of epochs  
+
+I re-used parts of the `fit_model` function from the `boston-housing` project.  I started off with random ranges of values from projects I had worked on in the past. When I saw that the optimal model found selected a value in the middle of the given range, I deemed my results acceptable. For example, the best `max_iter` value for the `MLPRegressor` was 500 when the range passed in was `[100, 200, 500, 1000]` and the best `hidden_layer_sizes` was `(50,0)` when the range passed in was `[(10,), (50,), (100,), (50,10)]`. See the Results section below for full description of the best model generated.
 
 ```python
 def fit_model(X, y, params):
@@ -338,6 +344,7 @@ best_model = fit_model(X_train, y_train,
 - Adding the number of words increased the score dramatically from 0.35 to 0.46.
 
 ## IV. Results
+### Model Evaluation and Validation
 
 - The benchmark model R<sup>2</sup> score is 0.26493386708.
 - The best model we generated was a Multi-Layer Perceptron (Neural Network) which got a score of 0.46644313957765082 after performing grid search on a range of hyper-parameters. Its parameters are as follows:  
@@ -349,10 +356,193 @@ best_model = fit_model(X_train, y_train,
        solver='adam', tol=0.0001, validation_fraction=0.1, verbose=False,  
        warm_start=False)`
 
+### Model Evaluation and Validation
+
+I created the below function to predict the year of any given song lyrics inputted as a string variable. It rounds up the year to the nearest integer since we are performing a regression but are looking for an integer output.  
+
+```python
+def predict_year(lyrics):
+  no_punctuation_result = lyrics.lower().translate(None, string.punctuation)
+  tfidf_result = tfidf.transform([no_punctuation_result])
+
+  profanity_count_result =
+    sum([no_punctuation_result.split().count(p.lower())
+      for p in profanityfilter.get_bad_words()])
+  word_count_result = len(lyrics.replace('\n', ' ').split())
+  tfs_profanity_result =
+    np.concatenate((np.array(profanity_count_result).reshape(1, 1),
+      tfidf_result.toarray()), axis=1)
+  tfs_profanity_wc_result =
+    np.concatenate((np.array(word_count_result).reshape(1, 1),
+      tfs_profanity_result), axis=1)
+
+  post_pca = pca.transform(tfs_profanity_wc_result)
+  return int(best_model.predict(post_pca)[0]) + 1965
+```
+
+When I tested it on new data, I got the following results (the lyrics have been omitted but they are widely available on the Internet). The variables represent {artist}\_{song}\_{true_release_year}.
+
+```
+Post Malone - Rockstar - 2017. Predicted: 1994
+Ella Fitzgerald - Summertime - 1968. Predicted: 1973
+Childish Gambino - Crawl - 2013. Predicted: 1983
+Ed Sheeran - A team - 2011. Predicted: 2000
+James Blake - Retrograde - 2013. Predicted: 1983
+The Police - Message in a Bottle - 1979. Predicted: 1981
+```
+
+- *Rockstar* seems very off. It could be due to it being a Rap song and Rap being prominent in the early 1990's.  
+- *Summertime* looks like a good prediction due to the fact that it contains simple and repeating lyrics, which is common in early pop songs.
+- *Crawl* by Childish Gambino is off-target by 20 years which is almost half of the dataset release year range.
+- Ed Sheeran's *A-team* gets an "okay" prediction, but still 20% off compared to the 50 years range of our dataset.
+- *Retrograde* is also off. The lyrics theme here is very general and does not contain any indication of its timeframe.
+- The Police's *Message in a Bottle* gets a good prediction with only 2 years off. It is interesting to look at the similarities between this song and James Blake's *Retrograde*. They both address the same themes of despair and general sadness, which explains their similar predicted year.
+
+The model seems fairly robust but could behave unexpectedly for some data points. For the few examples I have presented above, I would see someone using this model in order to supplement a song recommendation engine. However, if the application were more critical, like applications in the medical or defense field, such average robustness would probably make the model unusable.
+
 I realize that the R<sup>2</sup> for our best model is not overwhelming but it is definitely an improvement over the benchmark, and serves to show that the link between a song's lyrical theme and the historical context in which it was released is definitely existent. There are obviously other factors that affect a song's theme, like its geographical location as well as the background and profile of the artist behind the given song.
 
 
+
 ## V. Conclusion
+
+### Free-Form Visualization
+I decided to show the underlying data of the TfIdfVectorizer object that I fit to the data. This class allows me to access the feature names through the `get_feature_names()` method, which, in our case, are the the stemmed words of our data. Here is a sample list of stemmed words.
+
+```python
+tfidf.get_feature_names()[1012:1032]
+```
+```
+[u'anniversari',
+ u'annnnn',
+ u'announc',
+ u'annoy',
+ u'annoyin',
+ u'anoanoanoth',
+ u'anoint',
+ u'anonym',
+ u'anorex',
+ u'anoth',
+ u'anotha',
+ u'anotheral',
+ u'anothin',
+ u'ansiedad',
+ u'answer',
+ u'answerphon',
+ u'ant',
+ u'antediluvian',
+ u'antelop',
+ u'antenna']
+```  
+
+If we take a look at the stemmed word `anniversari` which is the 1013th feature, we see that the song `hot girls in love` by `loverboy` contains the word `anniversary`, which, after going through the stemming algorithm, becomes `anniversari`. Looking at the above data point, we determine that it is the 1302th data point in the `pandas` dataframe.
+
+![png](position_loverboy.png)
+
+If we then look at the value of the element at row 1301 and column 1012 of the dataset (zero-based indexing), we find the value `0.231317409355` which is the `tdidf("anniversari", hot girls love by loverboy )`
+
+--
+
+Another interesting visualization is the most common words in each decade of our dataset, which will give us a better sense of the lyrical themes over the years:
+```python
+from collections import Counter
+wcounters = [Counter()]
+curr_decade = 1965
+stopws = set(stopwords.words('english'))
+stopws.add("i'm")
+stopws.add('like')
+stopws.add("can't")
+stopws.add("it's")
+
+tokens_per_song = [(row[1]['Year'], row[1]['Lyrics'].replace('\n', ' ').split())
+  for row in df_sorted.iterrows()]
+decade_count = 0
+for song in tokens_per_song:
+    year = int(song[0])
+    lyrics = song[1]
+    if (year - curr_decade) == 10 and year != 2015:
+        decade_count += 1
+        wcounters.append(Counter())
+        curr_decade = year
+    for w in lyrics:
+        w = w.lower()
+        if w not in stopws:
+            wcounters[decade_count][w] += 1
+
+
+curr_decade = 1965
+for wcounter in wcounters:
+    print
+    print(curr_decade)
+    curr_decade += 10
+    for common in wcounter.most_common(10):
+        print(common[0] + " - " + str(common[1]) + " occurrences")
+```
+
+```
+1965
+love - 2267 occurrences
+baby - 1169 occurrences
+know - 1102 occurrences
+got - 1046 occurrences
+don't - 997 occurrences
+get - 949 occurrences
+oh - 828 occurrences
+come - 793 occurrences
+let - 757 occurrences
+time - 686 occurrences
+
+1975
+love - 3051 occurrences
+know - 1529 occurrences
+don't - 1451 occurrences
+got - 1243 occurrences
+get - 1140 occurrences
+time - 1082 occurrences
+you're - 1079 occurrences
+baby - 981 occurrences
+want - 947 occurrences
+oh - 940 occurrences
+
+1985
+love - 3603 occurrences
+don't - 2198 occurrences
+know - 2186 occurrences
+baby - 1588 occurrences
+got - 1402 occurrences
+oh - 1380 occurrences
+get - 1351 occurrences
+want - 1273 occurrences
+make - 1195 occurrences
+go - 1150 occurrences
+
+1995
+know - 2976 occurrences
+love - 2880 occurrences
+don't - 2569 occurrences
+get - 2258 occurrences
+got - 1951 occurrences
+baby - 1871 occurrences
+wanna - 1746 occurrences
+want - 1572 occurrences
+make - 1468 occurrences
+you're - 1378 occurrences
+
+2005
+know - 3320 occurrences
+don't - 3150 occurrences
+got - 2995 occurrences
+love - 2816 occurrences
+get - 2712 occurrences
+oh - 2195 occurrences
+go - 1917 occurrences
+make - 1791 occurrences
+wanna - 1788 occurrences
+you're - 1767 occurrences
+```
+
+As expected in pop music, the recurring theme is "love", which is a genuine way for our model to make explicit the universal meaning of love.
+
 
 ### Reflection
 I faced a major blocker when I realized that the dataset was not clean and had major errors. I contemplated starting with a new project but decided to try to scrape the data again. I did spend a considerable amount of time and effort on this task but it turned out to be an interesting and rewarding task and helped me counter this issue.
@@ -362,7 +552,7 @@ I realized that lyrics only are not able to give enough information to accuratel
 
 ### Improvement
 Using additional features would have definitely helped in approximating the release year of a song.
-For example, the musical genre will definitely help improve the results since a genre is very representative of a certain era.
+For example, the musical genre will definitely help improve the results since a genre is very representative of a certain era. Also, if we would want to keep predicting release years for modern songs, we would have to show our algorithm newer data points in order for it to be able to predict a wider year range.
 
 ## VI. References
 
@@ -372,147 +562,3 @@ For example, the musical genre will definitely help improve the results since a 
 <sup>4</sup> Computer Science Duke University. January 1, 2014. Document Similarity using NLTK and Scikit-Learn. http://www.cs.duke.edu/courses/spring14/compsci290/assignments/lab02.html  
 <sup>5</sup> Pythonspot.com. NLTK stop words. https://pythonspot.com/en/nltk-stop-words  
 <sup>6</sup> Slate.com. June 27, 2016. When Lyrics Were Clean, Almost.  http://www.slate.com/blogs/lexicon_valley/2016/06/27/a_history_of_swearing_in_music.html
-
-## Appendix I
-
-```python
-### google_search.py
-from googleapiclient.discovery import build
-import pprint
-import urllib2
-import csv
-import re
-from bs4 import BeautifulSoup
-
-my_api_key = 'API_KEY'
-my_cse_id = 'CSE_ID'
-
-
-def google_search(search_term, api_key, cse_id, **kwargs):
-    service = build('customsearch', 'v1', developerKey=api_key)
-    res = service.cse().list(q=search_term, cx=cse_id, **kwargs).execute()
-    try:
-        items = res['items']
-        return items
-    except KeyError:
-        return None
-
-def rowify(lyrics):
-    text = ''
-    for i in lyrics:
-        if 'Verse' in i or 'Chorus' in i or 'Bridge' in i.get_text():
-            continue
-        text = text + ' ' + i.get_text()
-    return text
-
-csvfile = open('billboard_lyrics_1964-2015.csv', 'rb')
-newcsv = open('billboard-az-lyrics.csv', 'wb')
-writer = csv.writer(newcsv, delimiter=',')
-
-reader = csv.DictReader(csvfile, delimiter=',')
-print('Finished reading csv')
-for row in reader:
-    google_query = row['Song'] + ' ' + row['Artist'] + ' metrolyrics'
-    print('Querying Google search for: ' + google_query)
-    results = google_search(google_query, my_api_key, my_cse_id, num=1)
-    if results == None:
-        print('Google search error')
-        print()
-        continue
-
-    url = results[0]['link']
-    print('Received url: ' + url)
-    if 'metrolyrics.com' not in url:
-        print('Not metrolyrics')
-        print()
-        continue
-    print('Opening Metrolyrics at url: ' + url)
-    response = urllib2.urlopen(url)
-
-    html = response.read()
-    soup = BeautifulSoup(html, 'html.parser')
-    lyrics = soup.find(id='lyrics-body-text')
-    if lyrics == None:
-        print('No lyrics found')
-        print()
-        continue
-    s = BeautifulSoup(lyrics.encode('utf8'), 'html.parser')
-    writer.writerow([row['Song'], row['Artist'], row['Year'],
-      rowify(s.find_all('p')).encode('utf8')])
-    newcsv.flush()
-    print()
-```
-
-```python
-### merge_dataset.py
-import csv
-
-csv_titles = [
-'billboard-metro-lyrics.csv',
-'billboard-metro-lyrics-2.csv',
-'billboard-metro-lyrics-3.csv',
-'billboard-metro-lyrics-4.csv',
-'billboard-az-lyrics.csv',
-'billboard-3.csv',
-'billboard-4.csv',
-'billboard-5.csv',
-'billboard-6.csv',
-'billboard-7.csv',
-'billboard-2.csv'
-]
-
-visited = set()
-
-merged = open('merged.csv', 'wb')
-merged_writer = csv.writer(merged, delimiter=',')
-
-import unicodedata as ud
-
-latin_letters= {}
-
-def is_latin(uchr):
-    try: return latin_letters[uchr]
-    except KeyError:
-         return latin_letters.setdefault(uchr, 'LATIN' in ud.name(uchr))
-
-def only_roman_chars(unistr):
-    return all(is_latin(uchr)
-           for uchr in unistr
-           if uchr.isalpha()) # isalpha suggested by John Machin
-
-for csv_title in csv_titles:
-    csvfile = open(csv_title, 'rb')
-    print('Reading ' + csv_title)
-    reader = csv.reader(csvfile, delimiter=',')
-    for row in reader:
-        if not row[3].isspace() and row[3] != '':
-            if only_roman_chars(row[3].decode('utf8')):
-                merged_writer.writerow(row)
-                visited.add(row[0]+row[1])
-            else:
-                print(row[0] + ' ' + row[1])
-                print(row[3])
-                print([(uchr, is_latin(uchr)) for uchr in row[3].decode('utf8')
-                  if uchr.isalpha() and not is_latin(uchr)])
-                print()
-    merged.flush()
-
-
-billboard_reader = csv.DictReader(open('billboard_lyrics_1964-2015.csv', 'rb'),
-  delimiter=',')
-
-count = 0
-for row in billboard_reader:
-    key = row['Song'] + row['Artist']
-    if key not in visited and row['Lyrics'] != ''
-      and not row['Lyrics'].isspace() and row['Lyrics'] != 'NA'
-      and row['Lyrics'] != ' NA ' and row['Lyrics'] != 'instrumental':
-        count += 1
-        merged_writer.writerow(
-          [row['Song'], row['Artist'], row['Year'], row['Lyrics']])
-        merged.flush()
-
-merged.close()
-
-print('Added ' + str(count) + ' more records')
-```
