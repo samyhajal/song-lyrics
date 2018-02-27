@@ -1,2 +1,5 @@
-# song-lyrics
-Udacity Machine Learning Nanodegree Capstone Project
+- `googlesearch.py`: script to scrape lyrics from metrolyrics.com. Uses `beautifulsoup` and `googleapiclient` modules.
+- `merge_csv.py`: script to merge scraped lyrics with original dataset.
+- `billboard_lyrics_1964-2015.csv`: original dataset from source.
+- `merged.csv`: post-scraping, post-merging dataset.
+- `song-lyrics.ipynb`: iPython notebook used for benchmark model, plotting, vectorizing, training and testing models. Requires `scikit-learn`, `numpy`, `scipy`, `nltk`, `profanityfilter`, `pandas`, `matplotlib`, `pickle`.
