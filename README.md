@@ -1,3 +1,5 @@
+- `proposal.pdf`: Final Proposal
+- `report.pdf`: Final Report
 - `googlesearch.py`: script to scrape lyrics from metrolyrics.com. Uses `beautifulsoup` and `googleapiclient` modules.
 - `merge_csv.py`: script to merge scraped lyrics with original dataset.
 - `billboard_lyrics_1964-2015.csv`: original dataset from source.
